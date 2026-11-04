@@ -42,6 +42,29 @@ class Provider(Protocol):
         ...
 
 
+SYSTEM_SPLIT = "<!-- ubermensch:per-turn -->"
+"""
+The app puts this line between the part of its system prompt that never
+changes (instructions, tool guides, the app guide) and the part that does
+(the person's context this turn). Everything before it is the same on every
+request, so providers cache it; an older server just passes the line along.
+"""
+
+
+def split_system(system: str | None) -> tuple[str | None, str]:
+    """(static, per_turn). Without the marker the whole prompt counts as static."""
+    if not system or SYSTEM_SPLIT not in system:
+        return system, ""
+    static, _, per_turn = system.partition(SYSTEM_SPLIT)
+    return static.strip(), per_turn.strip()
+
+
+def joined_system(system: str | None) -> str | None:
+    """The prompt with the marker removed, for providers that take one string (their prefix caching still helps)."""
+    static, per_turn = split_system(system)
+    return "\n\n".join(p for p in (static, per_turn) if p) or None
+
+
 def api_messages(prompt: str, messages: list[dict[str, str]] | None) -> list[dict[str, str]]:
     """
     The conversation as role/content pairs. Prefers the structured form the

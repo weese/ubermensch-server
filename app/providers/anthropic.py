@@ -11,12 +11,25 @@ import logging
 from typing import AsyncIterator
 
 from ..config import Config
-from .base import Event, ProviderError, api_messages, collect
+from .base import Event, ProviderError, api_messages, collect, split_system
 
 log = logging.getLogger("ubermensch.anthropic")
 
 # `deep` asks for one step more than the configured effort.
 _DEEPER = {"low": "medium", "medium": "high", "high": "max", "max": "max"}
+
+
+def _system_blocks(system: str) -> list[dict]:
+    """
+    The static part as its own block with a cache breakpoint, the per-turn
+    part after it: every question re-reads the instructions and the app guide
+    from the cache instead of paying for them again.
+    """
+    static, per_turn = split_system(system)
+    blocks: list[dict] = [{"type": "text", "text": static or "", "cache_control": {"type": "ephemeral"}}]
+    if per_turn:
+        blocks.append({"type": "text", "text": per_turn})
+    return blocks
 
 
 class AnthropicProvider:
@@ -42,7 +55,7 @@ class AnthropicProvider:
         kwargs = dict(
             model=self._model,
             max_tokens=self._max_tokens,
-            system=system or prompt,
+            system=_system_blocks(system or prompt),
             messages=api_messages(prompt, messages),
             thinking={"type": "adaptive"},
             output_config={"effort": effort},

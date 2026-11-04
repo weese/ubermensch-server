@@ -12,7 +12,7 @@ from typing import AsyncIterator
 import httpx
 
 from ..config import Config
-from .base import Event, ProviderError, api_messages, collect
+from .base import Event, ProviderError, api_messages, collect, joined_system
 
 
 class OllamaProvider:
@@ -32,7 +32,7 @@ class OllamaProvider:
         convo = api_messages(prompt, messages)
         body = {
             "model": self._model,
-            "messages": [{"role": "system", "content": system or prompt}, *convo] if (system or messages) else convo,
+            "messages": [{"role": "system", "content": joined_system(system) or prompt}, *convo] if (system or messages) else convo,
             "stream": True,
             # Ollama's "think" switch errors on models that cannot think, so it
             # is left to the model's own default; `deep` has no effect here.

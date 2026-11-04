@@ -12,7 +12,7 @@ from typing import AsyncIterator
 import httpx
 
 from ..config import Config
-from .base import Event, ProviderError, api_messages, collect
+from .base import Event, ProviderError, api_messages, collect, joined_system
 
 _DEEPER = {"low": "medium", "medium": "high", "high": "high", "max": "high"}
 
@@ -47,7 +47,7 @@ class OpenAIProvider:
         convo = api_messages(prompt, messages)
         body: dict = {
             "model": self._model,
-            "messages": [{"role": "system", "content": system or prompt}, *convo] if (system or messages) else convo,
+            "messages": [{"role": "system", "content": joined_system(system) or prompt}, *convo] if (system or messages) else convo,
             "stream": True,
             "max_completion_tokens": self._max_tokens,
         }

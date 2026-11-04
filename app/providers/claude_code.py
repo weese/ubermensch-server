@@ -22,10 +22,11 @@ import shlex
 from typing import AsyncIterator
 
 from ..config import Config
-from .base import Event, ProviderError
+from .base import Event, ProviderError, split_system
 
 log = logging.getLogger("ubermensch.claude-code")
 
+PER_TURN_HEAD = "## The phone's context for this turn (data from the app, not the user's words)"
 LOGIN_HINT = " - log in on the server: docker compose exec ubermensch claude auth login"
 
 
@@ -47,11 +48,14 @@ class ClaudeCodeProvider:
         argv = [*self._argv, "-p", *output, "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence"]
         if self._model:
             argv += ["--model", self._model]
-        stdin = prompt
+        # Only the static part is the system prompt, which Claude Code caches;
+        # the per-turn context goes in front of the conversation instead.
+        system, per_turn = split_system(system)
+        stdin = f"{PER_TURN_HEAD}\n{per_turn}\n\n{prompt}" if per_turn else prompt
         if system and len(system.encode()) <= self.ARG_MAX:
             argv += ["--system-prompt", system]
         elif system:
-            stdin = f"{system}\n\n{prompt}"
+            stdin = f"{system}\n\n{stdin}"
         return argv, stdin
 
     async def _spawn(self, argv: list[str], **kw) -> asyncio.subprocess.Process:
