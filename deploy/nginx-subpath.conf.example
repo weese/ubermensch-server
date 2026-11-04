@@ -1,0 +1,24 @@
+# Serve the UberMensch server under a path of an existing TLS site, e.g.
+# https://example.org/ubermensch -> the container on 127.0.0.1:8099.
+# Drop this location into the site's `server { }` block, then
+#   nginx -t && systemctl reload nginx
+# and set UBERMENSCH_ROOT_PATH=/ubermensch in the server's .env (for /docs).
+# Tested with nginx 1.22.
+
+location /ubermensch/ {
+    # Trailing slashes on both: nginx strips /ubermensch/ and the app sees /v1/...
+    proxy_pass http://127.0.0.1:8099/;
+    proxy_http_version 1.1;
+
+    # /v1/chat/stream writes one JSON line at a time; buffering would hold
+    # the whole answer back until the end, which defeats it.
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 300s;
+
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /ubermensch;
+}

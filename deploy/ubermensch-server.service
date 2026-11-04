@@ -1,0 +1,19 @@
+[Unit]
+Description=UberMensch server (coach model API)
+Documentation=https://github.com/
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The directory holding docker-compose.yml and .env.
+WorkingDirectory=/opt/ubermensch-server
+ExecStart=/usr/bin/docker compose up -d --build
+ExecStop=/usr/bin/docker compose down
+# A rebuild on a cold start can take a few minutes.
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

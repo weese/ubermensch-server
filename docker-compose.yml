@@ -1,0 +1,73 @@
+# UberMensch server - the coach's model, on your own machine.
+#
+#   ubermensch  :8099   REST API for the UberMensch app
+#
+# Everything is set in .env (copy .env.example). State is a small SQLite file
+# in STATE_ROOT; the claude-code provider keeps its login in CLAUDE_CODE_DIR.
+
+services:
+  ubermensch:
+    build: .
+    image: ubermensch-server:local
+    container_name: ubermensch
+    restart: unless-stopped
+
+    # Published on BIND_ADDR only. Default is the loopback address: put a
+    # TLS reverse proxy in front for anything beyond the machine itself, or
+    # bind to a LAN/VPN address. This service relays health summaries; it
+    # has no business answering the open internet without TLS.
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${PORT:-8099}:8099"
+
+    environment:
+      - UBERMENSCH_TOKEN=${UBERMENSCH_TOKEN}
+      - UBERMENSCH_STATE=/var/lib/ubermensch
+      - UBERMENSCH_PROVIDER=${UBERMENSCH_PROVIDER:-echo}
+      - UBERMENSCH_MODEL=${UBERMENSCH_MODEL:-}
+      - UBERMENSCH_EFFORT=${UBERMENSCH_EFFORT:-high}
+      - UBERMENSCH_MAX_TOKENS=${UBERMENSCH_MAX_TOKENS:-4096}
+      - UBERMENSCH_TIMEOUT=${UBERMENSCH_TIMEOUT:-160}
+      - UBERMENSCH_ROOT_PATH=${UBERMENSCH_ROOT_PATH:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - CLAUDE_CODE_CMD=${CLAUDE_CODE_CMD:-claude}
+      # Claude Code keeps its account state beside the credentials when this
+      # is set, so a recreate does not lose the login.
+      - CLAUDE_CONFIG_DIR=/home/ubermensch/.claude
+
+    volumes:
+      - ${STATE_ROOT:-./state}:/var/lib/ubermensch
+      # Claude Code's login, made inside this container by
+      # scripts/login-claude-code.sh. A dedicated directory, never a user's
+      # ~/.claude. Read-write on purpose: Claude Code refreshes the token in place.
+      - ${CLAUDE_CODE_DIR:-./claude}:/home/ubermensch/.claude
+
+    # Lets OLLAMA_BASE_URL's default reach an Ollama on the host, on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8099/v1/health',timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # Optional: an Ollama of its own, `docker compose --profile ollama up -d`.
+  # Then set OLLAMA_BASE_URL=http://ollama:11434 and pull a model once:
+  #   docker compose exec ollama ollama pull llama3.1:8b
+  # CPU-only as written; see the Ollama docs for the GPU runtime lines.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ubermensch-ollama
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ${OLLAMA_ROOT:-./ollama}:/root/.ollama
