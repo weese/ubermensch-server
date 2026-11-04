@@ -22,17 +22,23 @@ services:
     environment:
       - UBERMENSCH_TOKEN=${UBERMENSCH_TOKEN}
       - UBERMENSCH_STATE=/var/lib/ubermensch
-      - UBERMENSCH_PROVIDER=${UBERMENSCH_PROVIDER:-echo}
+      # Empty values are passed through as empty: config.py then falls back to
+      # the older UBERMENSCH_HARNESS* names (a first-version .env), then to
+      # its own defaults. A default here would silently win over the alias.
+      - UBERMENSCH_PROVIDER=${UBERMENSCH_PROVIDER:-}
+      - UBERMENSCH_HARNESS=${UBERMENSCH_HARNESS:-}
       - UBERMENSCH_MODEL=${UBERMENSCH_MODEL:-}
       - UBERMENSCH_EFFORT=${UBERMENSCH_EFFORT:-high}
       - UBERMENSCH_MAX_TOKENS=${UBERMENSCH_MAX_TOKENS:-4096}
-      - UBERMENSCH_TIMEOUT=${UBERMENSCH_TIMEOUT:-160}
+      - UBERMENSCH_TIMEOUT=${UBERMENSCH_TIMEOUT:-}
+      - UBERMENSCH_HARNESS_TIMEOUT=${UBERMENSCH_HARNESS_TIMEOUT:-}
       - UBERMENSCH_ROOT_PATH=${UBERMENSCH_ROOT_PATH:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      - CLAUDE_CODE_CMD=${CLAUDE_CODE_CMD:-claude}
+      - CLAUDE_CODE_CMD=${CLAUDE_CODE_CMD:-}
+      - UBERMENSCH_HARNESS_CMD=${UBERMENSCH_HARNESS_CMD:-}
       # Claude Code keeps its account state beside the credentials when this
       # is set, so a recreate does not lose the login.
       - CLAUDE_CONFIG_DIR=/home/ubermensch/.claude
@@ -42,7 +48,7 @@ services:
       # Claude Code's login, made inside this container by
       # scripts/login-claude-code.sh. A dedicated directory, never a user's
       # ~/.claude. Read-write on purpose: Claude Code refreshes the token in place.
-      - ${CLAUDE_CODE_DIR:-./claude}:/home/ubermensch/.claude
+      - ${CLAUDE_CODE_DIR:-${CLAUDE_CREDENTIALS_DIR:-./claude}}:/home/ubermensch/.claude
 
     # Lets OLLAMA_BASE_URL's default reach an Ollama on the host, on Linux too.
     extra_hosts:
