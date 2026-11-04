@@ -1,6 +1,6 @@
 # UberMensch server
 
-The optional server half of [UberMensch](https://github.com/), the personal
+The optional server half of UberMensch, the personal
 health coach app. The app works entirely on the phone; this service exists
 for one reason: to put a **bigger model of your choice** behind the coach,
 running where you decide, on your terms.
