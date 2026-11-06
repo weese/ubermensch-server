@@ -17,3 +17,14 @@ def test_prompt_uses_phone_system_when_given():
     assert coach.SYSTEM in own and coach.SYSTEM not in theirs
     assert "steps 8000" in theirs and "sleep 7h30" in theirs
     assert theirs.rstrip().endswith("Coach:")
+
+
+def test_red_flags_in_the_apps_other_languages():
+    # The app speaks German, Spanish, Italian and French; people describe symptoms in their own language.
+    for text in ["Ich habe seit heute früh Brustschmerzen", "me desmayé después de correr",
+                 "ho un dolore al petto", "je ne peux pas respirer"]:
+        assert coach.needs_escalation(text), text
+    # Training talk in those languages stays coaching.
+    for text in ["Atemnot nach Intervallen ist normal?", "me duele la rodilla", "gambe stanche dopo il lungo",
+                 "essoufflé après le fractionné"]:
+        assert not coach.needs_escalation(text), text

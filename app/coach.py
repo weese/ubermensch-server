@@ -51,8 +51,41 @@ _RED_FLAGS = re.compile(
 )
 
 
+# The same red flags in German, Spanish, Italian and French - the app speaks
+# them, and people write in their own language. A copy of RED_FLAGS_OTHER in
+# the app's src/coach/safety.ts: change one, change the other. No word
+# boundaries, as there: German runs words together ("Brustschmerzen"), and
+# every phrase is specific enough to stand alone.
+_RED_FLAGS_OTHER = re.compile(
+    r"brustschmerz|schmerzen in der brust|engegefühl in der brust|druck auf der brust"
+    r"|kriege keine luft|bekomme keine luft|atemnot in ruhe|ohnmächtig|in ohnmacht"
+    r"|bewusstlos geworden|schlimmsten kopfschmerzen|plötzliche starke kopfschmerzen"
+    r"|plötzlich starke kopfschmerzen|blut gehustet|blut husten|blut erbrochen|blut erbrechen"
+    r"|blut im stuhl|taub auf einer seite|verwaschene sprache|hängender mundwinkel"
+    r"|mich umbringen|mein leben beenden|suizid|selbstmord|selbstverletz|mich ritzen"
+    r"|dolor en el pecho|dolor de pecho|opresión en el pecho|no puedo respirar"
+    r"|me falta el aire en reposo|me desmayé|me he desmayado|desmayo|perdí el conocimiento"
+    r"|he perdido el conocimiento|peor dolor de cabeza|dolor de cabeza repentino"
+    r"|dolor de cabeza súbito|tosiendo sangre|toser sangre|tosí sangre|vomitando sangre"
+    r"|vomitar sangre|vomité sangre|sangre en las heces|entumecido de un lado"
+    r"|adormecido de un lado|habla arrastrada|cara caída|matarme|quitarme la vida"
+    r"|acabar con mi vida|suicid|autolesi|dolore al petto|dolore toracico|oppressione al petto"
+    r"|non riesco a respirare|senza fiato a riposo|sono svenut|svenimento|perso i sensi"
+    r"|peggior mal di testa|mal di testa improvviso|tossito sangue|tossire sangue"
+    r"|tossisco sangue|vomitato sangue|vomitare sangue|sangue nelle feci"
+    r"|intorpidit[oa] da un lato|parola impastata|bocca storta|uccidermi|togliermi la vita"
+    r"|voglio farla finita|autolesion|douleur thoracique|douleur dans la poitrine"
+    r"|douleur à la poitrine|oppression dans la poitrine|je n[’']arrive pas à respirer"
+    r"|je ne peux pas respirer|essoufflée? au repos|évanoui|évanouissement|perdu connaissance"
+    r"|pire mal de tête|mal de tête soudain|toussé du sang|tousser du sang|tousse du sang"
+    r"|vomi du sang|vomir du sang|sang dans les selles|engourdie? d[’']un côté|parole pâteuse"
+    r"|visage qui tombe|me tuer|mettre fin à mes jours|en finir avec la vie|automutil",
+    re.IGNORECASE,
+)
+
+
 def needs_escalation(text: str) -> bool:
-    return bool(_RED_FLAGS.search(text))
+    return bool(_RED_FLAGS.search(text) or _RED_FLAGS_OTHER.search(text))
 
 
 def describe(snap: HealthSnapshot | None) -> str:
